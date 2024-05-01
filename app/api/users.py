@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from app.schemas.user import UserCreate, UserDisplay, UserModel, PyObjectId, UserUpdate
+from app.schemas.user import UserCreate, UserDisplay, UserModel, PyObjectId, UserUpdate, UserResponse, TokenResponse
 from app.utils.user_utils import get_password_hash, authenticate_user, create_access_token
 from datetime import timedelta
 from app.database import get_nosql_db
@@ -18,6 +18,15 @@ async def get_users(db=Depends(get_nosql_db)):
 
 @router.post("/users/", response_model=UserDisplay)
 async def create_user(user: UserCreate, db=Depends(get_nosql_db)):
+    existing_user = await db['users'].find_one({"email": user.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email already registered")
+
+    # Check if there is any user with the same username
+    existing_username = await db['users'].find_one({"username": user.username})
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already taken")
+
     hashed_password = get_password_hash(user.password)
     new_user_data = user.dict()
     new_user_data['hashed_password'] = hashed_password
@@ -43,17 +52,30 @@ async def get_user(user_id: str, db=Depends(get_nosql_db)):
     return user
 
 
-@router.post("/token", response_model=dict)
+@router.post("/token", response_model=TokenResponse)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db=Depends(get_nosql_db)):
-    user = await authenticate_user(db, form_data.username, form_data.password)  # Correctly await the user authentication
+    user = await authenticate_user(db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=401,
             detail="Incorrect username or password"
         )
     access_token_expires = timedelta(minutes=15)
-    access_token = create_access_token(data={"sub": user['username']}, expires_delta=access_token_expires)  # Ensure this function is awaited if async
-    return {"access_token": access_token, "token_type": "bearer"}
+    access_token = create_access_token(data={"sub": user['username']}, expires_delta=access_token_expires)
+    
+    # Prepare user data for response
+    user_response = UserResponse(
+        id=user['id'],  # Ensure '_id' from MongoDB document is handled
+        username=user['username'],
+        email=user['email'],
+        name=user.get('name', '')  # Use .get to handle cases where name might not be set
+    )
+    
+    return TokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user_response
+    )
 
 @router.put("/users/{user_id}", response_model=UserDisplay)
 async def update_user(user_id: str, update_data: UserUpdate, db=Depends(get_nosql_db)):

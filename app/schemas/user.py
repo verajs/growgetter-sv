@@ -53,7 +53,17 @@ class UserUpdate(BaseModel):
     todos: Optional[List[TodoDisplay]] = Field(default=None)
     trees: Optional[List[TreeDisplay]] = Field(default=None)
 
-        
+class UserResponse(BaseModel):
+    id: PyObjectId  # Using PyObjectId to ensure it is serialized as a string
+    username: str
+    email: str
+    name: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserResponse
+
 
 class UserDisplay(BaseModel):
     id: PyObjectId

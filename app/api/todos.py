@@ -6,6 +6,20 @@ from typing import List
 from datetime import datetime, date
 router = APIRouter()
 
+
+@router.get("/users/{user_id}/todos", response_model=List[TodoDisplay])
+async def get_all_todos(user_id: str, db=Depends(get_nosql_db)):
+    user = await db.users.find_one({"id": user_id})
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if 'todos' not in user:
+        return []  # Return an empty list if there are no todos
+
+    # Convert each todo item in the list to match the TodoDisplay model
+    return [TodoDisplay(**todo) for todo in user['todos']]
+
+
 @router.post("/users/{user_id}/todos", response_model=TodoDisplay)
 async def add_todo_to_user(user_id: str, todo_data: TodoCreate, db=Depends(get_nosql_db)):
     todo_dict = todo_data.dict()

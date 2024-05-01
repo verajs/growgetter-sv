@@ -66,6 +66,7 @@ class TodoUpdate(BaseModel):
 
 
 class TodoDisplay(BaseModel):
+    id: PyObjectId
     title: str
     description: Optional[str]
     days_active: List[str]
