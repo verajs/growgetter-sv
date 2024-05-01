@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from app.schemas.user import UserCreate, UserDisplay, UserModel, PyObjectId
+from app.schemas.user import UserCreate, UserDisplay, UserModel, PyObjectId, UserUpdate
 from app.utils.user_utils import get_password_hash, authenticate_user, create_access_token
 from datetime import timedelta
 from app.database import get_nosql_db

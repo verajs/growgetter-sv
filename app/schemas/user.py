@@ -46,14 +46,14 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
-
 class UserUpdate(BaseModel):
-    username: Optional[str]
-    email: Optional[EmailStr]
-    name: Optional[str]
-    todos: Optional[List[TodoDisplay]]
-    trees: Optional[List[TreeDisplay]]
+    username: Optional[str] = Field(default=None)
+    email: Optional[EmailStr] = Field(default=None)
+    name: Optional[str] = Field(default=None)
+    todos: Optional[List[TodoDisplay]] = Field(default=None)
+    trees: Optional[List[TreeDisplay]] = Field(default=None)
 
+        
 
 class UserDisplay(BaseModel):
     id: PyObjectId
