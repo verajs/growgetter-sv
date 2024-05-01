@@ -78,6 +78,27 @@ async def update_todo(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.delete("/users/{user_id}/todos/{todo_id}", status_code=204)
+async def delete_todo(
+    user_id: str,
+    todo_id: str,
+    db=Depends(get_nosql_db)):
+    
+    try:
+        # Attempt to delete the todo item
+        result = await db.users.update_one(
+            {"id": user_id},
+            {"$pull": {"todos": {"id": todo_id}}}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=404, detail="Todo not found")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    return None
+
 
 @router.patch("/users/{user_id}/todos/{todo_id}/complete", response_model=TodoDisplay)
 async def complete_todo(user_id: str, todo_id: str, db=Depends(get_nosql_db)):
