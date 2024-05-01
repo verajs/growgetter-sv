@@ -14,6 +14,10 @@ python-multipart = "*"
 bcrypt = "==4.0.1"
 
 [dev-packages]
+pytest = "*"
+pytest-asyncio = "*"
+httpx = "*"
+mongomock = "*"
 
 [requires]
 python_version = "3.11"
