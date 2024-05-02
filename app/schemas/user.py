@@ -59,6 +59,7 @@ class UserResponse(BaseModel):
     email: str
     name: str
     trees: List[TreeDisplay] = Field(default_factory=lambda: [TreeDisplay(name="Uncaria", stage=1)])
+    completed_todos: int = 0
 
 class TokenResponse(BaseModel):
     access_token: str

@@ -70,6 +70,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         email=user['email'],
         name=user.get('name', ''),  # Use .get to handle cases where name might not be set
         trees=user.get('trees', []),
+        completed_todos=user.get('completed_todos', 0)
+        
     )
     
     return TokenResponse(
