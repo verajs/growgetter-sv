@@ -1,0 +1,70 @@
+User Management Routes
+1. GET /users/
+    * Retrieves a list of all users.
+    * Returns a list of user displays formatted according to the UserDisplay schema.
+2. POST /users/
+    * Creates a new user with the provided data.
+    * Returns the created user's data formatted according to the UserDisplay schema.
+    * Raises HTTPException for duplicate email or username, or if creation fails.
+3. GET /users/{user_id}
+    * Retrieves a specific user by their unique identifier.
+    * Returns the user's data formatted according to the UserDisplay schema.
+    * Raises HTTPException if the user is not found.
+4. PUT /users/{user_id}
+    * Updates the specified user with the provided update data.
+    * Returns the updated user's data formatted according to the UserDisplay schema.
+    * Raises HTTPException if the user is not found or no update is needed.
+5. POST /token
+    * Authenticates a user and issues a JWT token upon successful authentication.
+    * Returns a token response with JWT token and user's information.
+    * Raises HTTPException if authentication fails.
+Todo Management Routes
+1. GET /users/{user_id}/todos
+    * Retrieves all todos for a specified user.
+    * Returns a list of todo displays.
+2. POST /users/{user_id}/todos
+    * Adds a new todo to a user's todo list.
+    * Returns the added todo display.
+    * Raises HTTPException if the user is not found or the todo is not added.
+3. GET /users/{user_id}/todos/{todo_id}/completion-time
+    * Retrieves the completion time for a specific todo.
+    * Returns the completion time in hours, or None if not calculable.
+4. PUT /users/{user_id}/todos/{todo_id}
+    * Updates a specific todo based on provided data.
+    * Returns the updated todo information.
+    * Raises HTTPException if the todo is not found or no update is needed.
+5. DELETE /users/{user_id}/todos/{todo_id}
+    * Deletes a specific todo from a user's list.
+    * Raises HTTPException if the todo is not found or if a database operation fails.
+6. PATCH /users/{user_id}/todos/{todo_id}/complete
+    * Toggles the completion status of a todo.
+    * Returns the todo with updated completion status.
+    * Raises HTTPException if the todo or user is not found.
+7. GET /users/{user_id}/average-completion-time
+    * Retrieves the average completion time of todos for a specific user.
+    * Returns the average time in hours, or None if there are no todos.
+    * Raises HTTPException if the user is not found.
+8. GET /users/{user_id}/todos/check_reset
+    * Checks and resets the completed status of todos based on the completion date.
+    * Returns a list of todos that had their completion status reset.
+    * Raises HTTPException if the user is not found or no todos need processing.
+Analytic Routes
+1. GET /users/{user_id}/average-completion-time
+    * Retrieves the average completion time of todos for a specific user.
+    * Parameters:
+        * user_id (str): The unique identifier for the user.
+        * db (Database): Injected database session from get_nosql_db.
+    * Returns:
+        * Optional[float]: The average completion time of todos in hours, or None if there are no todos.
+    * Raises:
+        * HTTPException: Returns a 404 status code with the detail "User not found" if the user does not exist.
+2. GET /users/{user_id}/todos/{todo_id}/completion-time
+    * Retrieves the completion time for a specific todo of a user, calculated from the start and end times of the todo.
+    * Parameters:
+        * user_id (str): The unique identifier for the user.
+        * todo_id (str): The unique identifier for the todo item.
+        * db (Database): Injected database session from get_nosql_db.
+    * Returns:
+        * Optional[float]: The completion time of the todo in hours, or None if the completion time is not calculable or the todo lacks necessary time fields.
+    * Raises:
+        * HTTPException: Returns a 404 status code with the detail "Todo not found" if the specified todo or user does not exist.
