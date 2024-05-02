@@ -3,7 +3,7 @@ import os
 from fastapi import Depends
 
 
-MONGODB_URL = os.getenv("MONGODB_URL", "mongodb+srv://sebastianazuajev:growthgetter3399@growthgetter.zm6myud.mongodb.net/?retryWrites=true&w=majority&appName=Growthgetter") 
+MONGODB_URL = os.getenv("MONGODB_URL") 
 client: AsyncIOMotorClient = None
 
 
