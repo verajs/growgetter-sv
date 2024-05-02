@@ -54,7 +54,7 @@ class UserUpdate(BaseModel):
     trees: Optional[List[TreeDisplay]] = Field(default=None)
 
 class UserResponse(BaseModel):
-    id: PyObjectId  # Using PyObjectId to ensure it is serialized as a string
+    id: PyObjectId  
     username: str
     email: str
     name: str

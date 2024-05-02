@@ -3,7 +3,7 @@ from httpx import AsyncClient
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from mongomock import MongoClient
-from app.main import app  # Adjust import accordingly
+from app.main import app  
 
 client = TestClient(app)
 

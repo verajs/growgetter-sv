@@ -42,7 +42,6 @@ class TodoBase(BaseModel):
     description: Optional[str] = None
     days_active: Set[str] = Field(default_factory=set)
 
-    # This might not be necessary unless days_active is supposed to handle dates
     @validator('days_active', pre=True, each_item=True)
     def validate_days_active(cls, v):
         if isinstance(v, date) and not isinstance(v, datetime):
@@ -61,8 +60,8 @@ class TodoUpdate(BaseModel):
     title: Optional[str]
     description: Optional[str]
     days_active: Optional[List[str]]
-    completed: Optional[bool] = False  # Default to False if not provided
-    completed_date: Optional[datetime] = None  # Default to None if not provided
+    completed: Optional[bool] = False  
+    completed_date: Optional[datetime] = None  
 
 
 class TodoDisplay(BaseModel):
@@ -83,5 +82,5 @@ class TodoBase(BaseModel):
     created_date: date = Field(default_factory=date.today)
     completed: bool = False
     average_completion_time: Optional[float] = None
-    completed_date: Optional[date] = None  # Date when the todo was last completed
+    completed_date: Optional[date] = None  
     days_active: List[str] = Field(default_factory=list)

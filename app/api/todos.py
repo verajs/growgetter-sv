@@ -12,19 +12,37 @@ logging.basicConfig(level=logging.INFO)
 
 @router.get("/users/{user_id}/todos", response_model=List[TodoDisplay])
 async def get_all_todos(user_id: str, db=Depends(get_nosql_db)):
+    '''
+    Get all todos for a user
+
+    Parameters:
+    user_id (str): The user id
+
+    Returns:
+    List[TodoDisplay]: A list of TodoDisplay objects
+    '''
     user = await db.users.find_one({"id": user_id})
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     if 'todos' not in user:
-        return []  # Return an empty list if there are no todos
+        return [] 
 
-    # Convert each todo item in the list to match the TodoDisplay model
     return [TodoDisplay(**todo) for todo in user['todos']]
 
 
 @router.post("/users/{user_id}/todos", response_model=TodoDisplay)
 async def add_todo_to_user(user_id: str, todo_data: TodoCreate, db=Depends(get_nosql_db)):
+    '''
+    Add a new todo to a user's todo list
+
+    Parameters:
+    user_id (str): The user id
+    todo_data (TodoCreate): The data of the todo to be added
+
+    Returns:
+    TodoDisplay: The added todo
+    '''
     todo_dict = todo_data.dict()
     todo_dict['id'] = str(ObjectId())
     todo_dict['created_date'] = datetime.now()
@@ -37,26 +55,35 @@ async def add_todo_to_user(user_id: str, todo_data: TodoCreate, db=Depends(get_n
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="User not found or todo not added")
         
-        # Ensures the response exactly matches the TodoDisplay model
         return TodoDisplay(**todo_dict)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
 @router.put("/users/{user_id}/todos/{todo_id}", response_model=TodoDisplay)
-async def update_todo(
-    user_id: str,
-    todo_id: str,
-    todo_update_data: TodoUpdate,
-    db=Depends(get_nosql_db)):
-    
-    # Convert update data to dictionary and filter out None values
+async def update_todo(user_id: str, todo_id: str, todo_update_data: TodoUpdate, db=Depends(get_nosql_db)):
+    """
+    Updates a specific todo for a given user based on the provided todo update data.
+    It only updates fields that are explicitly provided and non-null.
+
+    Parameters:
+    - user_id (str): The unique identifier for the user.
+    - todo_id (str): The unique identifier for the todo item.
+    - todo_update_data (TodoUpdate): The data transfer object containing fields that might be updated.
+    - db: A dependency that injects the database session.
+
+    Returns:
+    - TodoDisplay: The updated todo information.
+
+    Raises:
+    - HTTPException: If no update data is provided, if the todo is not found, or if a database operation fails.
+    """
+
     update_data = {k: v for k, v in todo_update_data.dict().items() if v is not None}
     
     if not update_data:
         raise HTTPException(status_code=400, detail="No update data provided")
     
     try:
-        # Attempt to update the todo item
         result = await db.users.update_one(
             {"id": user_id, "todos.id": todo_id},
             {"$set": {f"todos.$.{k}": v for k, v in update_data.items()}}
@@ -65,7 +92,6 @@ async def update_todo(
         if result.modified_count == 0:
             raise HTTPException(status_code=404, detail="Todo not found or no update needed")
         
-        # Fetch the updated todo to return
         updated_user = await db.users.find_one(
             {"id": user_id, "todos.id": todo_id},
             {"todos.$": 1}
@@ -74,21 +100,29 @@ async def update_todo(
         if not updated_user:
             raise HTTPException(status_code=404, detail="Todo not found after update")
         
-        # Construct TodoDisplay from the updated todo item
-        updated_todo = updated_user["todos"][0]  # Since the query used 'todos.$', there should be exactly one match
+        updated_todo = updated_user["todos"][0]  
         return TodoDisplay(**updated_todo)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/users/{user_id}/todos/{todo_id}", status_code=204)
-async def delete_todo(
-    user_id: str,
-    todo_id: str,
-    db=Depends(get_nosql_db)):
-    
+async def delete_todo(user_id: str, todo_id: str, db=Depends(get_nosql_db)):
+    """
+    Deletes a specific todo from a user's list of todos.
+
+    Parameters:
+    - user_id (str): The unique identifier for the user.
+    - todo_id (str): The unique identifier for the todo item.
+    - db: A dependency that injects the database session.
+
+    Returns:
+    - None
+
+    Raises:
+    - HTTPException: If the todo is not found or if a database operation fails.
+    """
     try:
-        # Attempt to delete the todo item
         result = await db.users.update_one(
             {"id": user_id},
             {"$pull": {"todos": {"id": todo_id}}}
@@ -105,27 +139,36 @@ async def delete_todo(
 
 @router.patch("/users/{user_id}/todos/{todo_id}/complete", response_model=TodoDisplay)
 async def complete_todo(user_id: str, todo_id: str, db=Depends(get_nosql_db)):
-    # Attempt to fetch the specific todo item
+    """
+    Toggles the completion status of a todo item. If the todo is currently marked as completed, 
+    it will be set to incomplete, and vice versa.
+
+    Parameters:
+    - user_id (str): The unique identifier for the user.
+    - todo_id (str): The unique identifier for the todo item.
+    - db: A dependency that injects the database session.
+
+    Returns:
+    - TodoDisplay: The todo item with updated completion status.
+
+    Raises:
+    - HTTPException: If the user or todo is not found, or if the update fails.
+    """
     user = await db.users.find_one({"id": user_id, "todos.id": todo_id})
     if not user:
         raise HTTPException(status_code=404, detail="User or Todo not found")
 
-    # Extract the todo item
     todo = next((item for item in user['todos'] if item['id'] == todo_id), None)
     if not todo:
         raise HTTPException(status_code=404, detail="Todo not found")
 
-    # Determine the new state based on the current completion status
     if todo.get('completed'):
-        # Currently completed, set to not completed
         new_completed = False
-        new_completed_date = None  # Or set to a specific date if needed
+        new_completed_date = None  
     else:
-        # Currently not completed, set to completed
         new_completed = True
         new_completed_date = datetime.now()
 
-    # Update the database with the new completion status and date
     result = await db.users.update_one(
         {"id": user_id, "todos.id": todo_id},
         {"$set": {
@@ -137,7 +180,6 @@ async def complete_todo(user_id: str, todo_id: str, db=Depends(get_nosql_db)):
     if result.modified_count == 0:
         raise HTTPException(status_code=500, detail="Failed to update the todo item")
 
-    # Return the updated todo item in the response
     updated_todo = await db.users.find_one(
         {"id": user_id, "todos.id": todo_id},
         {"todos.$": 1}
@@ -145,10 +187,24 @@ async def complete_todo(user_id: str, todo_id: str, db=Depends(get_nosql_db)):
     if not updated_todo:
         raise HTTPException(status_code=404, detail="Todo not found after update")
 
-    return TodoDisplay(**updated_todo['todos'][0])  # Return the updated todo
+    return TodoDisplay(**updated_todo['todos'][0])  
 
 @router.get("/users/{user_id}/todos/check_reset", response_model=List[TodoDisplay])
 async def check_and_reset_todos(user_id: str, db=Depends(get_nosql_db)):
+    """
+    Checks and resets the completed status of todos based on the date they were completed. 
+    Todos that were completed before today's date will have their completion status reset.
+
+    Parameters:
+    - user_id (str): The unique identifier for the user.
+    - db: A dependency that injects the database session.
+
+    Returns:
+    - List[TodoDisplay]: A list of todos that had their completion status reset.
+
+    Raises:
+    - HTTPException: If the user is not found or no todos need processing.
+    """
     current_time = datetime.now()
     logging.info(f"Current time: {current_time}")
 
@@ -159,7 +215,7 @@ async def check_and_reset_todos(user_id: str, db=Depends(get_nosql_db)):
 
     if 'todos' not in user or not user['todos']:
         logging.info("No todos to process")
-        return []  # No todos to process
+        return []  
 
     updated_todos = []
     completions_needed_reset = 0
@@ -180,7 +236,6 @@ async def check_and_reset_todos(user_id: str, db=Depends(get_nosql_db)):
             completions_needed_reset += 1
             updated_todos.append(todo)
 
-            # Update the todo in the database
             result = await db.users.update_one(
                 {"id": user_id, "todos.id": todo['id']},
                 {"$set": {
