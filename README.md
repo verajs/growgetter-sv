@@ -59,3 +59,9 @@
 - Retrieves the average completion time of todos for a specific user.
 - **Returns**: The average time in hours, or None if there are no todos.
 - **Errors**: Raises HTTPException if the user is not found.
+
+
+### `GET /users/{user_id}/todos/check_reset`
+- Checks and resets the completed status of todos based on the completion date..
+- **Returns**: a list of todos that had their completion status reset.
+- **Errors**: Raises HTTPException if the user is not found or no todos need processing.
