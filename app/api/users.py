@@ -68,7 +68,8 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
         id=user['id'],  # Ensure '_id' from MongoDB document is handled
         username=user['username'],
         email=user['email'],
-        name=user.get('name', '')  # Use .get to handle cases where name might not be set
+        name=user.get('name', ''),  # Use .get to handle cases where name might not be set
+        trees=user.get('trees', []),
     )
     
     return TokenResponse(

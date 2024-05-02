@@ -58,6 +58,7 @@ class UserResponse(BaseModel):
     username: str
     email: str
     name: str
+    trees: List[TreeDisplay] = Field(default_factory=lambda: [TreeDisplay(name="Uncaria", stage=1)])
 
 class TokenResponse(BaseModel):
     access_token: str
