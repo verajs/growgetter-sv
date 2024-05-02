@@ -12,6 +12,7 @@ passlib = "*"
 pydantic = {extras = ["email"], version = "*"}
 python-multipart = "*"
 bcrypt = "==4.0.1"
+python-dateutil = "*"
 
 [dev-packages]
 pytest = "*"

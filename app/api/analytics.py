@@ -8,19 +8,27 @@ router = APIRouter()
 
 @router.get("/users/{user_id}/average-completion-time", response_model=Optional[float])
 async def get_average_completion_time(user_id: str, db: Database = Depends(get_nosql_db)):
-    user = await db.users.find_one({"id": user_id}, {"todos": 1})
+    # Retrieve the user document with both todos and the stored average_completion_time
+    user = await db.users.find_one({"id": user_id}, {"todos": 1, "average_completion_time": 1})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     todos = user.get('todos', [])
     if not todos:  # Check if todos list is empty
-        return None  # Could interpret as no todos found
+        # If no todos, check if there's a stored average time
+        return user.get('average_completion_time')
 
     avg_time_hours = calculate_avg_completion_time(todos)
+
     if avg_time_hours is None:
-        return None  # Could interpret as no completed todos or invalid date data
+        # Return stored average if calculation yields None
+        return user.get('average_completion_time')
+
+    # Update the user's average completion time if a new one is calculated
+    await db.users.update_one({"id": user_id}, {"$set": {"average_completion_time": avg_time_hours}})
 
     return avg_time_hours
+
 
 @router.get("/users/{user_id}/todos/{todo_id}/completion-time", response_model=Optional[float])
 async def get_todo_completion_time(user_id: str, todo_id: str, db: Database = Depends(get_nosql_db)):

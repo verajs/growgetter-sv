@@ -5,10 +5,12 @@ from app.utils.user_utils import get_password_hash, authenticate_user, create_ac
 from datetime import timedelta
 from app.database import get_nosql_db
 from bson import ObjectId
+import logging
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter()
 
+logging.basicConfig(level=logging.INFO)
 
 @router.get("/users/", response_model=list[UserDisplay])
 async def get_users(db=Depends(get_nosql_db)):

@@ -82,5 +82,6 @@ class TodoBase(BaseModel):
     description: Optional[str] = None
     created_date: date = Field(default_factory=date.today)
     completed: bool = False
+    average_completion_time: Optional[float] = None
     completed_date: Optional[date] = None  # Date when the todo was last completed
     days_active: List[str] = Field(default_factory=list)

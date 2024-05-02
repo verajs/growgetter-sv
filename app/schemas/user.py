@@ -85,7 +85,7 @@ class UserModel(BaseModel):
     todos: List[TodoDisplay] = []
     completed_todos: int = 0
     trees: List[TreeDisplay] = Field(default_factory=lambda: [TreeDisplay(name="Uncaria", stage=1)])
-
+    average_completion_time: Optional[float] = None
     class Config:
         json_encoders = {
             ObjectId: lambda oid: str(oid),

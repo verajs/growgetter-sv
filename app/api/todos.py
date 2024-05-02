@@ -4,7 +4,10 @@ from app.schemas.todo import TodoCreate, TodoDisplay, TodoUpdate, PyObjectId
 from bson import ObjectId
 from typing import List
 from datetime import datetime, date
+import logging
+
 router = APIRouter()
+logging.basicConfig(level=logging.INFO)
 
 
 @router.get("/users/{user_id}/todos", response_model=List[TodoDisplay])
@@ -147,13 +150,15 @@ async def complete_todo(user_id: str, todo_id: str, db=Depends(get_nosql_db)):
 @router.get("/users/{user_id}/todos/check_reset", response_model=List[TodoDisplay])
 async def check_and_reset_todos(user_id: str, db=Depends(get_nosql_db)):
     current_time = datetime.now()
-    current_weekday = current_time.strftime('%A')
+    logging.info(f"Current time: {current_time}")
 
     user = await db.users.find_one({"id": user_id})
     if not user:
+        logging.info("User not found")
         raise HTTPException(status_code=404, detail="User not found")
 
-    if 'todos' not in user:
+    if 'todos' not in user or not user['todos']:
+        logging.info("No todos to process")
         return []  # No todos to process
 
     updated_todos = []
@@ -161,33 +166,35 @@ async def check_and_reset_todos(user_id: str, db=Depends(get_nosql_db)):
 
     for todo in user['todos']:
         should_reset = False
-        # Check if the todo is completed and needs resetting
+        logging.info(f"Checking todo: {todo['id']}, Completed: {todo.get('completed')}, Completed Date: {todo.get('completed_date')}")
+        
         if todo.get('completed'):
             completed_date = todo.get('completed_date')
             if completed_date and completed_date.date() < current_time.date():
                 should_reset = True
-            if current_weekday in todo.get('days_active', []):
-                should_reset = True
 
         if should_reset:
+            logging.info(f"Resetting todo: {todo['id']}")
             todo['completed'] = False
             todo['completed_date'] = None
             completions_needed_reset += 1
             updated_todos.append(todo)
 
             # Update the todo in the database
-            await db.users.update_one(
+            result = await db.users.update_one(
                 {"id": user_id, "todos.id": todo['id']},
                 {"$set": {
                     "todos.$.completed": False,
                     "todos.$.completed_date": None
                 }}
             )
+            logging.info(f"Update result for todo {todo['id']}: {result.modified_count}")
 
     if completions_needed_reset > 0:
         new_count = user.get('completed_todos', 0) + completions_needed_reset
+        logging.info(f"Updating completed todos count: {new_count}")
         tree_index = next((index for index, tree in enumerate(user['trees']) if tree['name'] == 'Uncaria'), None)
-        
+
         if tree_index is not None:
             new_stage = user['trees'][tree_index]['stage'] + (new_count // 4) - (user.get('completed_todos', 0) // 4)
             await db.users.update_one(
@@ -199,4 +206,3 @@ async def check_and_reset_todos(user_id: str, db=Depends(get_nosql_db)):
             )
 
     return [TodoDisplay(**todo) for todo in updated_todos]
-
